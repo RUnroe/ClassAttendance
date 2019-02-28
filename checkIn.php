@@ -49,5 +49,4 @@ function addDataToJSON($filename,$studentID, $classroomID, $checkInTime, $checkI
     file_put_contents($filename, json_encode($checkInArray));
 }
 
-// https://work-evygomez88.c9users.io/arc/checkIn.php?studentID=gasgsdasg&classroomID=5123
 ?>
