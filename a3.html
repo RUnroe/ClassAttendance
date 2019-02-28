@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Class Attendance</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"/>
+        <link rel="stylesheet" type="text/css" href="a3.css">
+    </head>
+    <body >
+        <div id="main">
+            <h1>Class Attendance</h1>
+            <input id="dateOfTableRequested" type="date" onchange="loadJSON();">
+            <table id="attendance-table" class="table table-bordered">
+                <tr>
+                    <th colspan="2" id="course">Course</th>
+                    <th id="displayDate">Date</th>
+                </tr>
+                <tr>
+                    <th>Students</th>
+                    <th>Attendance</th>
+                    <th>Time</th>
+                </tr>
+            </table>
+        </div>
+</body>
+
+<script>
+
+var tableData; //json data gets stored to this variable
+var studentsInClass = ["Neil", "Ryan", "Austin", "Michael", "Collin", "Trevor","Everett"]; //list all students in class
+var classStartTime ="10:17 AM"; //Format - "08:30 AM";
+var currDate = new Date();
+var todayDate = (currDate.getFullYear()+"-"+fixDate(currDate.getMonth()+1))+"-"+fixDate(currDate.getDate());
+
+var table = document.getElementById("attendance-table");
+var course = document.getElementById("course");
+var displayDate = document.getElementById("displayDate");
+var dateOfTableRequested = document.getElementById("dateOfTableRequested");
+
+
+window.onload = function(){
+    loadJSON();
+    setInterval(loadJSON, 5 * 1000); //update data every 5 seconds
+};
+
+function loadJSON(){
+    //Get data from JSON file
+    tableData = "";
+    var xmlhttp = new XMLHttpRequest();
+    xmlhttp.onreadystatechange = function () {
+        if(this.readyState == 4 && this.status == 200){
+            tableData = JSON.parse(this.responseText); //assign value of json object to global variable 'tableData'
+            console.log(tableData);
+            clearTable();
+            renderData();
+        }
+    };
+    var timeOfAccess = Date.now();
+    if(dateOfTableRequested.value == ""){
+        currDate = new Date();
+        var dateOfTable = (currDate.getFullYear()+"-"+fixDate(currDate.getMonth()+1))+"-"+fixDate(currDate.getDate());
+        console.log(dateOfTable);
+    }
+    else{
+        dateOfTable = dateOfTableRequested.value;
+    }
+    xmlhttp.open("GET", "data/checkIn-"+dateOfTable+".json?callTime=" + timeOfAccess, true); //use timeOfAccess to make unique GET request to prevent reading cache
+    xmlhttp.send();
+}
+
+
+function renderData(){
+
+    course.innerHTML = "Course " + tableData[0].classRoomID; //display course #
+    displayDate.innerHTML = "Date  "+tableData[0].checkInDate; //display date
+    
+    
+    for(var i = 0; i < studentsInClass.length; i++){ //loop through each student in class and create a new row for each one
+        var row = table.insertRow(i+2);
+        var cell1 = row.insertCell(0);
+        var cell2 = row.insertCell(1);
+        var cell3 = row.insertCell(2);
+        
+        cell1.innerHTML = studentsInClass[i]; //list all students in first column
+        
+        var student = findDataForStudent(studentsInClass[i]); //get index of student to display data of that student
+        
+        
+        var today = new Date();
+        var currHour = today.getHours();
+        var currMin = today.getMinutes();
+        
+        var classStartTimeArray = timeToMilitary(classStartTime);
+        
+        if(student >=0){
+            cell3.innerHTML = tableData[student].checkInTime;// checkIn time
+            
+            var checkInTimeArray = timeToMilitary(tableData[student].checkInTime);
+            if(checkInTimeArray[0] < classStartTimeArray[0]){ //If the hour of the check in time is less than the class start hour
+                cell2.innerHTML = "Present";
+                cell2.className = "present";
+            }
+            else if(checkInTimeArray[0] == classStartTimeArray[0] && checkInTimeArray[1] < classStartTimeArray[1]){ //if the hours of the class start time and check in time are the same, compare the minutes
+                cell2.innerHTML = "Present";
+                cell2.className = "present";
+            }
+            else{ //check in time is after the class start time
+                cell2.innerHTML = "Tardy";
+                cell2.className = "tardy";
+            }
+        }
+        
+        else if((currHour < classStartTimeArray[0] || (currHour == classStartTimeArray[0] && currMin < classStartTimeArray[1]))&&( todayDate == dateOfTableRequested.value || dateOfTableRequested.value == "")){ 
+            //if current time is before class starts, display TBD for Attendance tab. Only display TBD if date of json is same as current date. This makes students that were absent on other days absent instead of TBD 
+            
+            cell3.innerHTML = "N/A";
+            cell2.innerHTML = "TBD";
+            cell2.className = "TBD";
+        }
+        else{
+            cell3.innerHTML = "N/A";
+            cell2.innerHTML = "Absent";
+            cell2.className = "absent";
+        }
+        
+    }
+}
+
+function findDataForStudent(student){ //find index of 'working' student
+    for(var i = 0; i < tableData.length; i++){
+        if(student == tableData[i].studentID){
+            //console.log(student);
+            return i; //return index of student
+        }
+    }
+    return -1; //student is absent
+}
+
+function clearTable(){ //clear out table 
+    var tableLength = table.rows.length-2; //'-2' to prevent clearing the title rows
+    if(tableLength > 0){
+        for(var i = 0; i < tableLength; i++){
+            table.deleteRow(2);
+        }
+    }
+}
+
+function fixDate(num){ //put 0 in front of number if needed to format properly. ex: "02" instead of "2"
+    if(num < 10){
+        var str = String(num);
+        return "0" + str;
+    }
+    return num;
+}
+
+function timeToMilitary(time){ //convert time to military to be able to compare
+    var timeArray = time.split(' ').join(',').split(':').join(',').split(',');
+    var hour = timeArray[0];
+    var minute = timeArray[1];
+    var ampm = timeArray[2];
+    //console.log(timeArray);
+    
+    if (ampm == "AM" && hour == 12){
+        hour = "00";
+    }
+    else if (ampm =="PM" && hour != 12){
+        hour = Number(hour)+12;
+    }
+    
+    return [hour,minute]; //return array. ind\ex: 0 is hour, 1 is minute
+}
+
+
+</script>
+</html>
+

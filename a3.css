@@ -1,0 +1,49 @@
+
+#main{
+    
+    background-color: white;
+    width:70%;
+    margin-left:2vw;
+}
+html{
+    background-color: white;
+    
+}
+table{
+    
+    background-color: white;
+    border-collapse: collapse;
+}
+table, th, td{
+    border:5px solid #AAAAAA;
+}
+td, th{
+    padding:10px;
+}
+th {
+  padding:12px 3px;
+}
+
+/*Just an idea: You can customize the cells based on the attendance*/
+.present{
+    background-color: #d0f7b4;
+}
+.tardy{
+    background-color: #f4e4ba;
+
+}
+.absent{
+    background-color:#fcc7c7;
+}
+
+h1{
+    float:left;
+    display:inline;
+}
+
+input{
+    float:right;
+    display:inline;
+    margin-top:4vh;
+    margin-right:0.5vw;
+}
